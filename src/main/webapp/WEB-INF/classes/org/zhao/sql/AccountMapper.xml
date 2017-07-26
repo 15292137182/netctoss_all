@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8" ?>  
+<!DOCTYPE mapper PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN"      
+ "http://ibatis.apache.org/dtd/ibatis-3-mapper.dtd">
+<mapper namespace="org.zhao.dao.AccountDao">
+
+	<update id="updateStatus"
+		parameterType="org.zhao.entity.Account">
+		UPDATE account
+		SET 
+			status=#{status,jdbcType=CHAR},
+			<choose>
+				<when test="status==0">
+					create_date=SYSDATE,
+					pause_date=null,
+					close_date=null
+				</when>
+				<when test="status==1">
+					pause_date=SYSDATE
+				</when>
+				<otherwise>
+					create_date=null,
+					pause_date=null,
+					close_date=SYSDATE
+				</otherwise>
+			</choose>
+		WHERE account_id=#{account_id,jdbcType=INTEGER}
+	</update>
+
+	<update id="updateAccount"
+		parameterType="org.zhao.entity.Account">
+		UPDATE account
+		SET 
+			recommender_id=#{recommender_id,jdbcType=INTEGER},
+			login_passwd=#{login_passwd,jdbcType=VARCHAR},
+			real_name=#{real_name,jdbcType=VARCHAR},
+			gender=#{gender,jdbcType=CHAR},
+			occupation=#{occupation,jdbcType=VARCHAR},
+			telephone=#{telephone,jdbcType=VARCHAR},
+			email=#{email,jdbcType=VARCHAR},
+			mailaddress=#{mailaddress,jdbcType=VARCHAR},
+			zipcode=#{zipcode,jdbcType=VARCHAR},
+			qq=#{qq,jdbcType=VARCHAR}
+		WHERE account_id=#{account_id,jdbcType=INTEGER}	
+	</update>
+
+	<insert id="save"
+		parameterType="org.zhao.entity.Account">
+		INSERT INTO account VALUES(
+			account_seq.nextval,
+			#{recommender_id,jdbcType=INTEGER},
+			#{login_name,jdbcType=VARCHAR},
+			#{login_passwd,jdbcType=VARCHAR},
+			#{status,jdbcType=CHAR},
+			#{create_date,jdbcType=TIMESTAMP},
+			#{pause_date,jdbcType=TIMESTAMP},
+			#{close_date,jdbcType=TIMESTAMP},
+			#{real_name,jdbcType=VARCHAR},
+			#{idcard_no,jdbcType=VARCHAR},
+			#{birthdate,jdbcType=DATE},
+			#{gender,jdbcType=CHAR},
+			#{occupation,jdbcType=VARCHAR},
+			#{telephone,jdbcType=VARCHAR},
+			#{email,jdbcType=VARCHAR},
+			#{mailaddress,jdbcType=VARCHAR},
+			#{zipcode,jdbcType=VARCHAR},
+			#{qq,jdbcType=VARCHAR},
+			#{last_login_time,jdbcType=TIMESTAMP},
+			#{last_login_ip,jdbcType=VARCHAR}
+		)	
+	</insert>
+
+	<select id="findByIdentityCard"
+		parameterType="string"
+		resultType="org.zhao.entity.Account">
+		SELECT * FROM account WHERE idcard_no=#{id}	
+	</select>
+
+	<select id="findById"
+		parameterType="int"
+		resultType="org.zhao.entity.Account">
+		SELECT a.*,r.idcard_no reIdentityCard FROM account a
+		LEFT JOIN account r ON a.recommender_id=r.account_id
+		WHERE a.account_id=#{id}
+	</select>
+
+	<select id="findRows"
+		parameterType="org.zhao.entity.page.AccountPage"
+		resultType="int">
+		SELECT COUNT(*) FROM account
+			<where>
+				<if test="identityCard!=null &amp;&amp; !identityCard.equals('')">
+					AND idcard_no=#{identityCard}
+				</if>				
+				<if test="nickname!=null &amp;&amp; !nickname.equals('')">
+					AND login_name=#{nickname}
+				</if>
+				<if test="realName!=null &amp;&amp; !realName.equals('')">
+					AND real_name=#{realName}
+				</if>
+				<if test="status!=null &amp;&amp; !status.equals('') &amp;&amp; status!=-1">
+					AND status=#{status}
+				</if>
+			</where>	
+	</select>
+
+	<select id="findByPage"
+		parameterType="org.zhao.entity.page.AccountPage"
+		resultType="org.zhao.entity.Account">
+		SELECT * FROM (
+			SELECT t.*,ROWNUM r FROM (
+				SELECT * FROM account
+				<where>
+					<if test="identityCard!=null &amp;&amp; !identityCard.equals('')">
+						AND idcard_no=#{identityCard}
+					</if>				
+					<if test="nickname!=null &amp;&amp; !nickname.equals('')">
+						AND login_name=#{nickname}
+					</if>
+					<if test="realName!=null &amp;&amp; !realName.equals('')">
+						AND real_name=#{realName}
+					</if>
+					<if test="status!=null &amp;&amp; !status.equals('') &amp;&amp; status!=-1">
+						AND status=#{status}
+					</if>
+				</where>
+				ORDER BY create_date DESC
+				)t
+			)WHERE r BETWEEN #{begin} AND #{end}
+	</select>
+
+</mapper>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
