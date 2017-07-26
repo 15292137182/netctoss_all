@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8" ?>  
+<!DOCTYPE mapper PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN"      
+ "http://ibatis.apache.org/dtd/ibatis-3-mapper.dtd">
+<mapper namespace="org.zhao.dao.ServiceDao">
+
+	<select id="findAllById"
+		parameterType="INTEGER"
+		resultType="hashmap">
+		SELECT s.service_id,s.account_id,s.os_username,s.status,s.unix_host,
+		a.idcard_no ,a.real_name,
+		c.name ,c.descr ,c.cost_id,c.creatime
+		FROM service s
+		LEFT JOIN account a ON a.account_id=s.account_id
+		LEFT JOIN cost c ON c.cost_id=s.cost_id
+		WHERE s.service_id=#{id}
+	</select>
+	
+	<select id="findById"
+		parameterType="org.zhao.entity.Services"
+		resultType="org.zhao.entity.Services">
+		SELECT * FROM service WHERE 
+			<choose>
+				<when test="service_id!=null">
+					service_id=#{service_id}
+				</when>
+				<otherwise>
+					account_id=#{account_id}
+				</otherwise>
+			</choose>
+	</select>
+	
+	<update id="updateStatus"
+		parameterType="org.zhao.entity.Services">
+		UPDATE service
+		SET status=#{status,jdbcType=CHAR},
+		<choose>
+			<when test="status==0">
+				pause_date=null,
+				close_date=null,
+				create_date=SYSDATE
+			</when>
+			<when test="status==1">
+				pause_date=SYSDATE,
+				close_date=null,
+				create_date=SYSDATE
+			</when>
+			<otherwise>
+				pause_date=null,
+				close_date=SYSDATE,
+				create_date=null
+			</otherwise>
+		</choose>		
+		WHERE service_id IN
+			<foreach collection="serviceIds"
+				item="service_id"
+				open="("
+				separator=","
+				close=")">
+				#{service_id,jdbcType=INTEGER}
+			</foreach>
+	</update>
+
+	<!--  
+	<update id="updateStatus"
+		parameterType="org.zhao.entity.Services">
+		UPDATE service
+		SET status=#{status,jdbcType=CHAR},
+		<choose>
+			<when test="status==0">
+				pause_date=null,
+				close_date=null,
+				create_date=SYSDATE
+			</when>
+			<when test="status==1">
+				pause_date=SYSDATE,
+				close_date=null,
+				create_date=SYSDATE
+			</when>
+			<otherwise>
+				pause_date=null,
+				close_date=SYSDATE,
+				create_date=null
+			</otherwise>
+		</choose>		
+		WHERE service_id=#{service_id,jdbcType=INTEGER}
+	</update>
+	-->
+
+	<insert id="save"
+		parameterType="org.zhao.entity.Services">
+		INSERT INTO service VALUES(
+			service_seq.nextval,
+			#{account_id,jdbcType=INTEGER},
+			#{unix_host,jdbcType=VARCHAR},
+			#{os_username,jdbcType=VARCHAR},
+			#{login_passwd,jdbcType=VARCHAR},
+			#{status,jdbcType=CHAR},
+			#{create_date,jdbcType=TIMESTAMP},
+			#{pause_date,jdbcType=TIMESTAMP},
+			#{close_date,jdbcType=TIMESTAMP},
+			#{cost_id,jdbcType=INTEGER}
+		)	
+	</insert>
+
+	<select id="findRows"
+		parameterType="org.zhao.entity.page.ServicePage"
+		resultType="int">
+		SELECT COUNT(*)
+			FROM service s
+			LEFT JOIN account a ON a.account_id=s.account_id
+			LEFT JOIN cost c ON c.cost_id=s.cost_id
+			<where>
+				<if test="oSAccount!=null &amp;&amp; !oSAccount.equals('')">
+					AND s.os_username=#{oSAccount}
+				</if>
+				<if test="unixHost!=null &amp;&amp; !unixHost.equals('')">
+					AND s.unix_host=#{unixHost}
+				</if>
+				<if test="identityCard!=null &amp;&amp; !identityCard.equals('')">
+					AND a.idcard_no=#{identityCard}
+				</if>
+				<if test="status!=null &amp;&amp; !status.equals('') &amp;&amp; status!=-1">
+					AND s.status=#{status}
+				</if>
+			</where>
+	</select>
+
+	<select id="findByPage"
+		parameterType="org.zhao.entity.page.ServicePage"
+		resultType="hashmap">
+		SELECT * FROM (
+			SELECT t.*,ROWNUM r FROM (
+				SELECT s.service_id,s.account_id,s.os_username,s.status,s.unix_host,
+				a.idcard_no ,a.real_name,
+				c.name ,c.descr 
+				FROM service s
+				LEFT JOIN account a ON a.account_id=s.account_id
+				LEFT JOIN cost c ON c.cost_id=s.cost_id
+				<where>
+					<if test="oSAccount!=null &amp;&amp; !oSAccount.equals('')">
+						AND s.os_username=#{oSAccount}
+					</if>
+					<if test="unixHost!=null &amp;&amp; !unixHost.equals('')">
+						AND s.unix_host=#{unixHost}
+					</if>
+					<if test="identityCard!=null &amp;&amp; !identityCard.equals('')">
+						AND a.idcard_no=#{identityCard}
+					</if>
+					<if test="status!=null &amp;&amp; !status.equals('') &amp;&amp; status!=-1">
+						AND s.status=#{status}
+					</if>
+				</where>
+				ORDER BY s.create_date DESC
+				)t
+			)WHERE r BETWEEN #{begin} AND #{end}
+	</select>
+
+</mapper>
